@@ -1,21 +1,38 @@
-import hvsrpy
-from hvsrpy import sesame
 import sys
 import os
+import hvsrpy
+from hvsrpy import sesame
+
+# Determine the base directory, whether running as a script or as a frozen exe
+# if getattr(sys, 'frozen', False):
+#     # If the application is run as a bundle, the base directory is the directory of the executable
+#     base_dir = os.path.dirname(sys.executable)
+# else:
+#     # If run as a normal script, it's the script's directory
+#     base_dir = os.path.dirname(os.path.abspath(__file__))
+
+# # Construct the path to the local obspy library
+# obspy_path = os.path.join(base_dir, 'obspy-master')
+
+# # Add the obspy path to the system path, so that the bundled obspy library can be imported.
+# if os.path.isdir(obspy_path):
+#     sys.path.insert(0, obspy_path)
+
+
 import json
 import keyring
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import tkinter as tk
 from tkinter import ttk, scrolledtext, messagebox, filedialog
 from ttkthemes import ThemedTk
 from obspy import UTCDateTime
+import obspy.io.mseed
 import threading
 import queue
 import logging
 from datetime import datetime, timedelta, timezone
 import numpy as np
 
-# Import the refactored logic
+# Import logic
 from time_sync import ShakeCommunicator
 from data_acquisition import fetch_waveforms
 from mhvsr_logic import process_mhvsr, get_default_preprocessing_settings, get_default_processing_settings
@@ -816,14 +833,31 @@ class ShakeFetchApp:
         self.mhvsr_window_length = tk.StringVar(value="150")
         ttk.Spinbox(param_frame, from_=1, to=1000, width=7, textvariable=self.mhvsr_window_length).grid(row=0, column=1, sticky="w", padx=5)
 
-        ttk.Label(param_frame, text="Bandwidth:").grid(row=1, column=0, sticky="w", pady=2)
+        ttk.Label(param_frame, text="K&O Bandwidth:").grid(row=0, column=2, sticky="w", pady=2, padx=(10,0))
         self.mhvsr_bandwidth = tk.StringVar(value="40")
-        ttk.Spinbox(param_frame, from_=1, to=100, width=7, textvariable=self.mhvsr_bandwidth).grid(row=1, column=1, sticky="w", padx=5)
+        ttk.Spinbox(param_frame, from_=1, to=100, width=7, textvariable=self.mhvsr_bandwidth).grid(row=0, column=3, sticky="w", padx=5)
 
-        ttk.Label(param_frame, text="Combine Horizontals:").grid(row=2, column=0, sticky="w", pady=2)
+        ttk.Label(param_frame, text="Filter Low Cut (Hz):").grid(row=1, column=0, sticky="w", pady=2)
+        self.mhvsr_filter_low = tk.StringVar(value="None")
+        ttk.Entry(param_frame, width=9, textvariable=self.mhvsr_filter_low).grid(row=1, column=1, sticky="w", padx=5)
+
+        ttk.Label(param_frame, text="Filter High Cut (Hz):").grid(row=1, column=2, sticky="w", pady=2, padx=(10,0))
+        self.mhvsr_filter_high = tk.StringVar(value="None")
+        ttk.Entry(param_frame, width=9, textvariable=self.mhvsr_filter_high).grid(row=1, column=3, sticky="w", padx=5)
+
+        ttk.Label(param_frame, text="Taper Type:").grid(row=2, column=0, sticky="w", pady=2)
+        self.mhvsr_taper_type = tk.StringVar(value="tukey")
+        taper_options = ["tukey", "hann", "hamming", "bartlett", "blackman"]
+        ttk.Combobox(param_frame, textvariable=self.mhvsr_taper_type, values=taper_options, state="readonly", width=7).grid(row=2, column=1, sticky="ew", padx=5)
+
+        ttk.Label(param_frame, text="Taper Width (alpha):").grid(row=2, column=2, sticky="w", pady=2, padx=(10,0))
+        self.mhvsr_taper_width = tk.StringVar(value="0.2")
+        ttk.Spinbox(param_frame, from_=0, to=1, increment=0.05, width=7, textvariable=self.mhvsr_taper_width).grid(row=2, column=3, sticky="w", padx=5)
+
+        ttk.Label(param_frame, text="Combine Horizontals:").grid(row=3, column=0, sticky="w", pady=2)
         self.mhvsr_combine_method = tk.StringVar(value="geometric_mean")
         combine_options = ["geometric_mean", "squared_average", "azimuth", "single_azimuth"]
-        ttk.Combobox(param_frame, textvariable=self.mhvsr_combine_method, values=combine_options, state="readonly").grid(row=2, column=1, sticky="ew", padx=5)
+        ttk.Combobox(param_frame, textvariable=self.mhvsr_combine_method, values=combine_options, state="readonly").grid(row=3, column=1, columnspan=3, sticky="ew", padx=5)
 
         # --- Analysis and Output ---
         analysis_frame = ttk.Frame(main_frame)
@@ -875,11 +909,22 @@ class ShakeFetchApp:
             window_length = int(self.mhvsr_window_length.get())
             bandwidth = int(self.mhvsr_bandwidth.get())
             combine_method = self.mhvsr_combine_method.get()
+            
+            # New parameters
+            low_cut_str = self.mhvsr_filter_low.get()
+            high_cut_str = self.mhvsr_filter_high.get()
+            taper_type = self.mhvsr_taper_type.get()
+            taper_width = float(self.mhvsr_taper_width.get())
+
+            low_cut = float(low_cut_str) if low_cut_str.lower() != 'none' else None
+            high_cut = float(high_cut_str) if high_cut_str.lower() != 'none' else None
 
             preprocessing_settings = get_default_preprocessing_settings()
             preprocessing_settings.window_length_in_seconds = window_length
+            preprocessing_settings.filter_corner_frequencies_in_hz = (low_cut, high_cut)
 
             processing_settings = get_default_processing_settings()
+            processing_settings.window_type_and_width = (taper_type, taper_width)
             processing_settings.smoothing['bandwidth'] = bandwidth
             processing_settings.method_to_combine_horizontals = combine_method
 

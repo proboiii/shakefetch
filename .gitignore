@@ -1,50 +1,56 @@
-# Python
+# Python artifacts
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-*egg-info/
-dist/
-build/
-.env
 
-# Environments
+# Virtual Environments
 TAenv/
 TAENV312/
 
-# Other files and folders
-HVSRSuite.7z
-SeismicSuite.spec
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Logs
+logs/
+*.log
+
+# User profiles
 profiles.json
-test.py
+
+# Local dependency sources
+obspy-master/
+HVSRpy/
 diferentlenght.py
 get-pip.py
 groupfile.py
+HVSRSuite.7z
 laskdjfdfs.txt
-main.ipynb
-main.py
+nuitka-crash-report.xml
 PENGOLAHAN.ipynb
 readshake.py
+requirements.txt
 SeismicSuite_HVSR.py
+SeismicSuite-Linux-wm.spec
+SeismicSuite.spec
+shakefetch.spec
+singlefetchprocessing4combined.mseed
 sshToSeis.py
 sshToSeisgmn.py
 test_connection.py
-DLGF/
-HVSRpy/
-logs/
-test/
-SeismicSuite-Linux-wm.spec
-HVSRSuite/icon.png
-HVSRSuite/icon.ico
-shakefetch.spec
-HVSRSuite/Icons/1.png
-HVSRSuite/Icons/logos-20251009T194903Z-1-001.zip
-HVSRSuite/Icons/2.png
+DLGF/M4.ipynb
+DLGF/M4.py
+shakefetch/.env
 shakefetch/icon.ico
-shakefetch/Icons/logos-20251009T194903Z-1-001.zip
-shakefetch/Icons/2.png
-shakefetch/Icons/1.png
-shakefetch/Icons/logos-20251009T194903Z-1-001.zip
-shakefetch/Icons/2.png
-shakefetch/Icons/1.png
 shakefetch/icon.png
+shakefetch/obspy-master.zip
+shakefetch/setup.py
+shakefetch/shakefetch_refactored.py
+shakefetch/shakefetch.spec
+shakefetch/test.py
+shakefetch/Icons/1.png
+shakefetch/Icons/2.png
+shakefetch/Icons/logos-20251009T194903Z-1-001.zip
+test/test.txt
